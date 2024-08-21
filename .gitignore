@@ -1,0 +1,45 @@
+# Build output folders
+build/
+cmake-build-*/
+
+# CMake files
+CMakeFiles/
+CMakeCache.txt
+*.cmake
+Makefile
+cmake_install.cmake
+CTestTestfile.cmake
+
+# Compiled binary files
+*.out
+*.o
+*.so
+*.a
+*.exe
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Editor configuration files
+.idea/
+.vscode/
+
+# CLion and JetBrains IDE workspace files
+*.iml
+.idea/modules.xml
+.idea/workspace.xml
+.idea/.idea/workspace.xml
+
+# Operating system generated files
+.DS_Store
+Thumbs.db
+
+# Git conflict files
+*.orig
+
+# Google Test generated files
+Testing/
+test_detail.xml
