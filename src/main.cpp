@@ -9,6 +9,6 @@
 
 
 int main() {
-  acg_menus::run();
+  acg_menus::CreateMainWindow();
 }
 
