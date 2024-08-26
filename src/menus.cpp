@@ -9,6 +9,7 @@
 #include <dirent.h>
 #include <csignal>
 #include <algorithm>
+#include <sys/ioctl.h>
 
 std::vector<std::string> GetFilesInDirectory(const std::string& directory_path) {
     std::vector<std::string> files;
@@ -33,6 +34,8 @@ namespace acg_menus{
 
 WINDOW *main_win;
 WINDOW *info_win;
+WinConfig win_config;
+
 
 /**
  * remove win content
@@ -45,7 +48,7 @@ void ClearWinContent(WINDOW *win) {
 /**
  * clear
  */
-void Handle_exit(int sig) {
+void HandleExit(int sig) {
     if (main_win != nullptr) {
         delwin(main_win);
         main_win = nullptr;
@@ -92,8 +95,8 @@ void CreateMainWindow() {
     curs_set(0);// 隐藏终端光标
     keypad(stdscr, TRUE);
 
-    signal(SIGINT, Handle_exit);
-    signal(SIGTERM, Handle_exit);
+    signal(SIGINT, HandleExit);
+    signal(SIGTERM, HandleExit);
     int cmd_x, cmd_y;
     getmaxyx(stdscr, cmd_y, cmd_x);
 
@@ -111,11 +114,10 @@ void CreateMainWindow() {
     int info_height, info_width, info_start_y, info_start_x;
     info_height = cmd_y * 0.12;
     info_width = main_width;
-    info_start_y = (cmd_y * 0.2 - cmd_y) / 2;
+    info_start_y = (cmd_y * 0.2 - info_height) / 2;
     info_start_x = start_x;
     info_win = newwin(info_height, info_width, 0, info_start_x);
-    box(info_win, 0, 0);
-    mvwprintw(info_win, 1, 1, "info");
+
 
 
     // mvwprintw(main_win, 1, 1, "hihihi");
@@ -135,7 +137,47 @@ void CreateMainWindow() {
     endwin();//exit
 }
 
-void run() {
+
+void DrawMainWin(int t) {
+    //get scr size
+    struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    win_config.max_y_ = w.ws_row;
+    win_config.max_x_ = w.ws_col;
+    win_config.main_height_ = win_config.max_y_ * 0.8;
+    win_config.main_width_ = win_config.max_x_;
+    win_config.info_height_ = win_config.max_y_ * 0.12;
+    win_config.info_width_ = win_config.main_width_;
+
+    int start_y = (win_config.max_y_ - win_config.main_height_) / 2;
+    int start_x = (win_config.max_x_ - win_config.main_width_) / 2;
+    int info_start_y = (win_config.max_x_ * 0.2 ) / 2;
+    //create win or reset win size
+    if (t == 0 ) {//create
+        main_win = newwin(win_config.main_height_, win_config.main_width_, start_y, start_x);
+        info_win = newwin(win_config.info_height_, win_config.info_width_, 0, start_x);
+    } else {//reset
+        clear();
+        resize_term(0, 0);
+        wresize(main_win, win_config.main_height_, win_config.main_width_);
+        wclear(main_win);
+        wresize(info_win, win_config.info_height_, win_config.info_width_);
+        wclear(info_win);  
+    }
+
+    box(main_win, 0, 0);
+    mvwprintw(main_win, 1, 1, "main_win");
+    box(info_win, 0, 0);
+    mvwprintw(info_win, 1, 1, "info");
+    refresh();
+    wrefresh(main_win);
+    wrefresh(info_win);
+}
+void HandleWinCh(int sig) {
+    DrawMainWin(1);
+}
+
+void Run() {
     initscr();// 初始化屏幕并进入 ncurses 模式
     cbreak();// 将输入模式设置为逐字符模式，避免缓冲，直接传递输入
     noecho();
@@ -143,8 +185,17 @@ void run() {
     keypad(stdscr, TRUE);// 启用标准屏幕（stdscr）的键盘功能，支持捕获特殊键（如箭头键）
 
     // 设置信号处理
-    signal(SIGINT, Handle_exit);   // 捕获 Ctrl+C
-    signal(SIGTERM, Handle_exit);  // 捕获终止信号
+    signal(SIGINT, HandleExit);   // 捕获 Ctrl+C
+    signal(SIGTERM, HandleExit);  // 捕获终止信号
+    signal(SIGWINCH, HandleWinCh);
+
+    DrawMainWin(0);
+    while (1) {
+        int c;
+        c = getch();
+    }
+    
+    HandleExit(1);
     endwin();
 
 }
